@@ -1,0 +1,48 @@
+mutation ($input: userInputData!) {
+  CreateUser(userInput: $input) {
+    _id
+    email
+  }
+  # {
+  #     "input": {
+  #     "email": "tester1@gmail.com",
+  #     "name": "tester",
+  #     "password": "tester"
+  # }
+  # }
+}
+
+mutation ($email: String!, $password: String!) {
+  Login(email: $email, password: $password) {
+    userId
+    token
+  }
+}
+
+mutation ($input: postInputData!) {
+  CreatePost(postInput: $input) {
+    _id
+    createdAt
+    updatedAt
+    creator {
+      name
+    }
+  }
+}
+
+query {
+  GetPosts {
+    numOfPosts
+    posts {
+      _id
+      createdAt
+      updatedAt
+      title
+      imageUrl
+      content
+      creator {
+        name
+      }
+    }
+  }
+}
