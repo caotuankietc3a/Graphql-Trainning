@@ -45,7 +45,7 @@ const schema = buildSchema(`
   }
 
   type RootQuery {
-    GetPosts: postData!
+    GetPosts(page: Int!): postData!
   }
 
   type RootMutation{

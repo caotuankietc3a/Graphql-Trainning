@@ -24,6 +24,9 @@ mutation ($input: postInputData!) {
     _id
     createdAt
     updatedAt
+    title
+    imageUrl
+    content
     creator {
       name
     }
@@ -31,7 +34,7 @@ mutation ($input: postInputData!) {
 }
 
 query {
-  GetPosts {
+  GetPosts(page: Int!) {
     numOfPosts
     posts {
       _id

@@ -58,25 +58,23 @@ const CreatePost = async ({ postInput }, req) => {
     throw error;
   }
   const user = await User.findOne({ _id: req.userId });
-  console.log(user._id === user._id.toString());
   const newPost = await new Post({
     title,
     content,
     imageUrl,
     creator: user,
   }).save();
-  console.log("newPost:", newPost);
   user.posts.push(newPost);
   await user.save();
   return {
     ...newPost._doc,
     _id: newPost._id.toString(),
-    createAt: newPost.createdAt.toISOString(),
+    createdAt: newPost.createdAt.toISOString(),
     updatedAt: newPost.updatedAt.toISOString(),
   };
 };
 
-const GetPosts = async (_, req) => {
+const GetPosts = async ({ page }, req) => {
   if (!req.isAuth) {
     const error = new Error("Authenticate failed!!!");
     error.statusCode = 401;
@@ -85,7 +83,9 @@ const GetPosts = async (_, req) => {
   const totalPosts = await Post.countDocuments();
   const posts = await Post.find()
     .populate({ path: "creator" })
-    .sort({ createdAt: -1 }); // decs
+    .sort({ createdAt: -1 })
+    .skip(3 * (page - 1))
+    .limit(3);
   return {
     posts: posts.map((post) => {
       return {

@@ -56,10 +56,11 @@ class Feed extends Component {
       page--;
       this.setState({ postPage: page });
     }
+    console.log(page);
     const graphqlQuery = {
       query: `
         query {
-          GetPosts {
+          GetPosts(page: ${page}){
             numOfPosts
             posts {
               _id
@@ -155,55 +156,88 @@ class Feed extends Component {
     });
     console.log(localStorage.getItem("token"));
 
-    // const formData = new FormData();
-    // formData.append("title", postData.title);
-    // formData.append("content", postData.content);
-    // formData.append("image", postData.image);
-    // let url = "http://localhost:8080/feed/post";
-    // let method = "POST";
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+    formData.append("image", image);
     if (this.state.editPost) {
-      // url = "http://localhost:8080/feed/post/" + this.state.editPost._id;
-      // method = "PUT";
+      console.log(this.state.editPost);
+      formData.append("oldPath", this.state.editPost.imagePath);
     }
-    console.log(title);
-    console.log(image);
-    console.log(content);
-    const graphqlQuery = {
-      query: `
+
+    fetch("http://localhost:8080/put-image", {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer " + this.props.token
+      },
+      body: formData
+    })
+      .then(res => {
+        return res.json();
+      })
+      .then(res => {
+        console.log(res);
+        const { status, message } = res;
+        if (status === 422 || status === 401) {
+          throw new Error(message);
+        }
+        const graphqlQuery = {
+          query: `
           mutation ($input: postInputData!) {
             CreatePost(postInput: $input) {
               _id
               createdAt
               updatedAt
+              title
+              imageUrl
+              content
               creator {
                 name
               }
             }
           }
         `,
-      variables: {
-        input: {
-          title,
-          content,
-          imageUrl: image.name
-        }
-      }
-    };
+          variables: {
+            input: {
+              title,
+              content,
+              imageUrl: image.name
+            }
+          }
+        };
+        return fetch("http://localhost:8080/graphql", {
+          method: "POST",
+          body: JSON.stringify(graphqlQuery),
+          headers: {
+            Authorization: "Bearer " + this.props.token,
+            "Content-Type": "application/json"
+          }
+        });
+      })
 
-    fetch("http://localhost:8080/graphql", {
-      method: "POST",
-      body: JSON.stringify(graphqlQuery),
-      headers: {
-        Authorization: "Bearer " + this.props.token,
-        "Content-Type": "application/json"
-      }
-    })
       .then(res => res.json())
       .then(resData => {
         console.log(resData);
         const {
           data: { CreatePost: post }
         } = resData;
+        const newPost = {
+          _id: post._id,
+          title: post.title,
+          content: post.content,
+          creator: post.creator,
+          createdAt: post.createdAt,
+          imagePath: post.imageUrl
+        };
+        this.setState(prevState => {
+          prevState.posts.length >= 3 && prevState.posts.pop();
+          prevState.posts.unshift(newPost);
+          return {
+            posts: [...prevState.posts],
+            postPage: 1
+          };
+        });
+
         this.setState(prevState => {
           return {
             isEditing: false,
