@@ -49,3 +49,47 @@ query {
     }
   }
 }
+
+query {
+  GetPost(postId: String!) {
+    _id
+    createdAt
+    updatedAt
+    title
+    imageUrl
+    content
+    creator {
+      name
+    }
+  }
+}
+
+mutation ($input: updatedPostInputData!) {
+  UpdatePost(updatedInput: $input) {
+    _id
+    createdAt
+    updatedAt
+    title
+    imageUrl
+    content
+    creator {
+      name
+    }
+  }
+}
+
+mutation {
+  DeletePost(postId: String!)
+}
+
+query {
+  GetStatus{
+    status
+  }
+}
+
+mutation {
+  UpdateStatus(status: String!){
+    status
+  }
+}

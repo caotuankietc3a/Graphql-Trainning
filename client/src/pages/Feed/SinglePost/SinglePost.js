@@ -14,24 +14,65 @@ class SinglePost extends Component {
 
   componentDidMount() {
     const postId = this.props.match.params.postId;
-    fetch("http://localhost:8080/feed/post/" + postId, {
-      headers: {
-        Authorization: "Bearer " + this.props.token
-      }
-    })
-      .then(res => {
-        if (res.status !== 200) {
-          throw new Error("Failed to fetch status");
+    console.log(postId);
+    // const graphqlQuery = {
+    //   query: `
+    //     query{
+    //       GetPost(postId: ${postId}){
+    //         _id
+    //         createdAt
+    //         updatedAt
+    //         title
+    //         imageUrl
+    //         content
+    //         creator {
+    //           name
+    //         }
+    //       }
+    //     }
+    //   `
+    // };
+
+    const graphqlQuery = {
+      query: `
+        query($postId: String!) {
+          GetPost(postId: $postId) {
+            _id
+            createdAt
+            updatedAt
+            title
+            imageUrl
+            content
+            creator {
+              name
+            }
+          }
         }
-        return res.json();
-      })
+      `,
+      variables: {
+        postId: postId
+      }
+    };
+    fetch("http://localhost:8080/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + this.props.token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(graphqlQuery)
+    })
+      .then(res => res.json())
       .then(resData => {
+        console.log(resData);
+        const {
+          data: { GetPost: post }
+        } = resData;
         this.setState({
-          title: resData.post.title,
-          author: resData.post.creator.name,
-          image: "http://localhost:8080/" + resData.post.imageUrl,
-          date: new Date(resData.post.createdAt).toLocaleDateString("en-US"),
-          content: resData.post.content
+          title: post.title,
+          author: post.creator.name,
+          image: "http://localhost:8080/" + post.imageUrl,
+          date: new Date(post.createdAt).toLocaleDateString("en-US"),
+          content: post.content
         });
       })
       .catch(err => {

@@ -3,6 +3,7 @@ const User = require("../models/user");
 const Post = require("../models/post");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { clearImage } = require("../helpers/feed");
 
 const CreateUser = async (args, req) => {
   const {
@@ -99,4 +100,133 @@ const GetPosts = async ({ page }, req) => {
   };
 };
 
-module.exports = { CreateUser, Login, CreatePost, GetPosts };
+const GetPost = async ({ postId }, req) => {
+  if (!req.isAuth) {
+    const error = new Error("Authenticate failed!!!");
+    error.statusCode = 401;
+    throw error;
+  }
+  const post = await Post.findById(postId).populate("creator");
+
+  return {
+    ...post._doc,
+    _id: post._id.toString(),
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+  };
+};
+
+const UpdatePost = async (
+  { updatedInput: { postId, title, imageUrl, content } },
+  req
+) => {
+  if (!req.isAuth) {
+    const error = new Error("Authenticate failed!!!");
+    error.statusCode = 401;
+    throw error;
+  }
+  const post = await Post.findById(postId);
+  if (!post) {
+    const error = new Error("Post is not found!!!");
+    error.statusCode = 403;
+    throw error;
+  }
+  if (post.creator.toString() !== req.userId) {
+    const error = new Error("Not Authorized!!!");
+    error.statusCode = 404;
+    throw error;
+  }
+  const updatedPost = await Post.findByIdAndUpdate(
+    postId,
+    {
+      title,
+      imageUrl,
+      content,
+    },
+    { new: true }
+  ).populate("creator");
+  return {
+    ...updatedPost._doc,
+    _id: updatedPost._id.toString(),
+    createdAt: updatedPost.createdAt.toISOString(),
+    updatedAt: updatedPost.updatedAt.toISOString(),
+  };
+};
+
+const DeletePost = async ({ postId }, req) => {
+  if (!req.isAuth) {
+    const error = new Error("Authenticate failed!!!");
+    error.statusCode = 401;
+    throw error;
+  }
+  const post = await Post.findById(postId);
+  if (!post) {
+    const error = new Error("Post is not found!!!");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  if (post.creator.toString() !== req.userId) {
+    const error = new Error("Not Authorized!!!");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const removedPost = await Post.findByIdAndDelete(postId);
+  clearImage(removedPost.imageUrl);
+  const user = await User.findByIdAndUpdate(
+    req.userId,
+    {
+      $pull: {
+        posts: postId,
+      },
+    },
+    { new: true }
+  );
+  console.log("user:", user);
+  return true;
+};
+
+const GetStatus = async (_, req) => {
+  if (!req.isAuth) {
+    const error = new Error("Authenticate failed!!!");
+    error.statusCode = 401;
+    throw error;
+  }
+  const user = await User.findById(req.userId);
+  if (!user) {
+    const error = new Error("No user found!!!");
+    error.statusCode = 404;
+    throw error;
+  }
+  return { ...user._doc, _id: user._id.toString() };
+};
+
+const UpdateStatus = async ({ status }, req) => {
+  if (!req.isAuth) {
+    const error = new Error("Authenticate failed!!!");
+    error.statusCode = 401;
+    throw error;
+  }
+  const user = await User.findById(req.userId);
+  if (!user) {
+    const error = new Error("No user found!!!");
+    error.statusCode = 404;
+    throw error;
+  }
+  user.status = status;
+  await user.save();
+  return { ...user._doc, _id: user._id.toString() };
+};
+
+module.exports = {
+  CreateUser,
+  Login,
+  CreatePost,
+  GetPosts,
+  GetPost,
+  UpdatePost,
+  DeletePost,
+  GetStatus,
+  UpdateStatus,
+};

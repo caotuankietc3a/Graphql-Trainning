@@ -33,6 +33,13 @@ const schema = buildSchema(`
     content: String!
     imageUrl: String!
   }
+  
+  input updatedPostInputData{
+    title: String!
+    content: String!
+    imageUrl: String!
+    postId: String!
+  }
 
   type authData{
     token: String!
@@ -46,18 +53,24 @@ const schema = buildSchema(`
 
   type RootQuery {
     GetPosts(page: Int!): postData!
+    GetPost(postId: String!): Post!
+    GetStatus: User!
   }
 
   type RootMutation{
     CreateUser(userInput: userInputData!): User!
     Login(email: String!, password: String!): authData!
     CreatePost(postInput: postInputData!): Post!
+    UpdatePost(updatedInput: updatedPostInputData!): Post!
+    DeletePost(postId: String!): Boolean
+    UpdateStatus(status: String!): User!
   }
 
   schema {
     query: RootQuery
     mutation: RootMutation
   }
+
 `);
 
 module.exports = schema;

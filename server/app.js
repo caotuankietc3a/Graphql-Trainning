@@ -55,6 +55,7 @@ app.use((req, res, next) => {
 });
 
 app.use(isAuth);
+
 app.put("/put-image", (req, res, next) => {
   try {
     console.log("body:", req.body);
@@ -74,9 +75,11 @@ app.put("/put-image", (req, res, next) => {
       clearImage(oldPath);
     }
 
-    return res
-      .status(500)
-      .json({ message: "File is stored!!!", filePath: req.file.path });
+    return res.status(500).json({
+      message: "File is stored!!!",
+      filePath: req.file.path,
+      isEditing: oldPath ? true : false,
+    });
   } catch (err) {
     console.log(err);
     return next(err);
